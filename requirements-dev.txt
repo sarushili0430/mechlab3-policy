@@ -1,7 +1,7 @@
 # 開発ツール（lint / type / test）。CI と git フックはこれだけを入れて純ロジックを検査する。
 # 実行時依存（torch / lerobot / rosbags / cv2 / av）は重いのでここには入れない。
 # 変換・学習・推論を実際に回すときは別途: pip install -e .（torch は環境に合わせて）
-ruff>=0.6
+black>=25.1
 mypy>=1.11
 pytest>=8.3
 pytest-cov>=6.0

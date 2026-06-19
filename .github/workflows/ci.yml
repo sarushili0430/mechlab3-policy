@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   lint:
-    name: ruff + mypy
+    name: black + mypy
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -32,15 +32,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
-      - name: Ruff (format check)
-        run: ruff format --check --diff .
-
-      - name: Ruff (lint)
-        if: ${{ !cancelled() }}
-        run: ruff check .
+      - name: Black (format check)
+        run: black --check --diff .
 
       - name: Mypy (type check)
-        # ruff が失敗しても型エラーを同じ run で出す。
+        # black が失敗しても型エラーを同じ run で出す。
         if: ${{ !cancelled() }}
         run: mypy
 
