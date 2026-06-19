@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# データ・学習成果物（大容量・非追跡。受け渡しは HF Hub / 共有ストレージ）
+datasets/
+outputs/
+checkpoints/
+*.ckpt
+*.safetensors
+wandb/

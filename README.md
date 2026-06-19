@@ -1,0 +1,47 @@
+# mechlab3-policy
+
+[kuas-mechlab3](https://github.com/sarushili0430/kuas-mechlab3) の teleop ロボットを自律化するための **学習・推論** リポジトリ。映像から `{vx, wz}` を生成し、**WebSocket で Pi に送って**走らせる（ACT / SmolVLA）。
+
+**ROS 非依存**。ロボット本体（ROS2）とは別リポにして、重い torch / lerobot 依存をロボリポの軽量環境・Pi から切り離す。GPU 機に ROS は要らない。
+
+## ロボリポとの境界（契約だけ・コード依存なし）
+
+- **データ受け渡し（入力）**: `kuas-mechlab3` の `datasets/raw/<...>/{bag, meta.json}`。bag は `rosbags` で読む（ROS 不要）。スキーマ = ロボリポの `recording.py` / `docs/autonomy-plan.md §3`。
+- **制御（出力）**: WS `{"vx","wz"}`（[-1,1]）→ `ws://<pi>:9001`。`websockets` で送る。人間のテレオプ・クライアントの差し替え。
+- **計画の正本**: フェーズ別の詳細は **ロボリポの [`docs/autonomy-plan.md`](https://github.com/sarushili0430/kuas-mechlab3/blob/develop/docs/autonomy-plan.md)**。本リポはその Phase 3 / 5 / 7 を担う。
+
+## 構成
+
+```
+src/mechlab3_policy/sync.py   # 純: 時刻同期 / 固定Hzリサンプル（pytest 済み）
+tests/                        # 純ロジックのテスト
+convert_to_lerobot.py         # Phase 3: bag+meta → LeRobot 形式（スケルトン）
+policy_runner.py              # Phase 7: 映像 → policy → WS {vx,wz}（DummyPolicy 同梱）
+pyproject.toml                # 依存: lerobot, rosbags, websockets, opencv-python, av
+```
+
+## セットアップ
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+# torch は CUDA に合わせて別途（例: https://pytorch.org の指示通り）
+pytest          # 純ロジックの確認
+```
+
+## まず WS 経路を疎通確認（モデル不要）
+
+ロボ側で `start-all.sh`（driver+カメラ+teleop）を起動した状態で:
+
+```bash
+python policy_runner.py --pi <ラズパイIP> --dry-run   # 送信せず行動を表示
+python policy_runner.py --pi <ラズパイIP>              # DummyPolicy（緩い直進）で実走 ※車輪を浮かせ人間監視
+```
+
+`DummyPolicy` を学習済みモデル（Phase 5 の checkpoint）に差し替えれば自律走行になる。
+
+## フェーズ（詳細は autonomy-plan.md）
+
+- **Phase 3** `convert_to_lerobot.py`: 録画 bag → LeRobot データセット（両モデル対応の union）。
+- **Phase 5** 学習: `lerobot` で **ACT**（`--policy.type=act`、ゼロ学習）/ **SmolVLA**（`--policy.path=lerobot/smolvla_base`、finetune）。同じデータを 1 フラグ切替。
+- **Phase 7** `policy_runner.py`: 推論して WS 送信。アクションチャンクで遅延吸収、人間オーバーライド併設。
