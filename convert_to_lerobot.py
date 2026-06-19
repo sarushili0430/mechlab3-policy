@@ -29,7 +29,9 @@ TASK = "follow the route"
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--raw-dir", required=True, help="datasets/raw/<episode> のパス")
-    p.add_argument("--out", default="datasets/lerobot", help="LeRobot データセット出力先")
+    p.add_argument(
+        "--out", default="datasets/lerobot", help="LeRobot データセット出力先"
+    )
     p.add_argument("--hz", type=float, default=CONTROL_HZ)
     p.add_argument("--camera-topic", default=FRONT_TOPIC)
     return p.parse_args(argv)
@@ -62,7 +64,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     # --- bag からストリームを取り出す（TODO: read_bag を実装）---
-    action_ts, actions, frame_ts, frames = read_bag(raw_dir / meta["bag_dir"], args.camera_topic)
+    action_ts, actions, frame_ts, frames = read_bag(
+        raw_dir / meta["bag_dir"], args.camera_topic
+    )
 
     # --- 固定 Hz グリッドで同期（純ロジック、テスト済み）---
     t0, t1 = action_ts[0], action_ts[-1]
@@ -70,7 +74,11 @@ def main(argv: list[str] | None = None) -> int:
     grid_actions = resample_latest(grid, action_ts, actions)
     grid_frames = resample_latest(grid, frame_ts, frames)
     # 最初のフレーム/行動が揃う tick まで先頭を捨てる
-    pairs = [(f, a) for f, a in zip(grid_frames, grid_actions) if f is not None and a is not None]
+    pairs = [
+        (f, a)
+        for f, a in zip(grid_frames, grid_actions)
+        if f is not None and a is not None
+    ]
     states = previous_action_state([a for _, a in pairs])
 
     # --- LeRobot データセットへ書き出し（TODO: API はバージョン依存）---
@@ -86,7 +94,8 @@ def main(argv: list[str] | None = None) -> int:
     #                     "action": list(action), "task": TASK})
     #   ds.save_episode()
     raise NotImplementedError(
-        f"同期まで完了（{len(pairs)} frames）。LeRobot 書き出しを実装する（Phase 3）"
+        f"同期まで完了（{len(pairs)} frames, {len(states)} states）。"
+        "LeRobot 書き出しを実装する（Phase 3）"
     )
 
 

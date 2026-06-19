@@ -15,13 +15,44 @@ dependencies = [
     # torch は lerobot 経由で入るが、CUDA 版は環境に合わせて別途入れること（README 参照）
 ]
 
-[project.optional-dependencies]
-dev = ["pytest", "ruff"]
+# 開発ツール（lint / type / test）は requirements-dev.txt 側で管理する。
+# 実行時依存（torch 等の重量級）と分離することで、CI と git フックは
+# それらを入れずに「純ロジックの ruff / mypy / pytest」だけを高速に回す。
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+# 既定（E4 / E7 / E9 / F）+ import 整列（I）。E501（行長）は日本語コメントが多いため不採用、
+# コードの行折りは ruff format に任せる。
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.mypy]
+python_version = "3.10"
+mypy_path = "src"
+# 型検査は純ロジック（src）とテストのみ。IO スクリプト（convert_to_lerobot / policy_runner）
+# は重い依存を import するため対象外（実装が固まり次第ここに追加する）。
+files = ["src/mechlab3_policy", "tests"]
+strict = true
+
+[[tool.mypy.overrides]]
+# 重い実行時依存は CI / 型検査環境に入れないので未解決 import を許す
+# （pure surface のみを検査する方針。robot リポと同じ）。
+module = ["rosbags.*", "cv2.*", "lerobot.*", "websockets.*", "av.*", "numpy.*", "torch.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
 
-[tool.ruff]
-line-length = 88
-target-version = "py310"
+[tool.coverage.run]
+branch = true
+source = ["mechlab3_policy"]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.commitizen]
+# Conventional Commits（commit-msg フックの cz check で検証）。
+name = "cz_conventional_commits"

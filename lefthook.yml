@@ -1,0 +1,45 @@
+# Lefthook — fast local git hooks. Docs: https://lefthook.dev
+#
+# CI（.github/workflows/ci.yml）の lint / test を手元で先取りする軽量チェック。
+# 重い実行時依存（torch / lerobot 等）は入れず、純ロジックの ruff / mypy / pytest だけを回す。
+# クリーンな pre-commit なら CI も緑のままになるはず。
+#
+# Setup (per clone):
+#   python -m venv .venv && source .venv/bin/activate
+#   pip install -r requirements-dev.txt   # ruff / mypy / pytest / lefthook / commitizen
+#   lefthook install                      # フックを .git/hooks に配線
+pre-commit:
+  parallel: true
+  skip:
+    - merge
+    - rebase
+  commands:
+    # 整形チェック（staged のみ・高速）。自動修正はオフ。整形して commit したいなら:
+    #   run: .venv/bin/ruff format {staged_files}
+    #   stage_fixed: true
+    ruff-format:
+      glob: "*.py"
+      run: .venv/bin/ruff format --check {staged_files}
+
+    ruff-lint:
+      glob: "*.py"
+      run: .venv/bin/ruff check {staged_files}
+
+    # 型検査は全体（mypy は文脈が要る）。Python が commit に含まれる時だけ走る。
+    mypy:
+      glob: "*.py"
+      run: .venv/bin/mypy
+
+    pytest:
+      glob: "*.py"
+      run: .venv/bin/pytest
+
+commit-msg:
+  skip:
+    - merge
+    - rebase
+  commands:
+    # Conventional Commits を検証（feat:, fix:, docs:, ...）。1 回だけ回避するなら:
+    #   git commit --no-verify
+    commitizen:
+      run: .venv/bin/cz check --commit-msg-file {1}

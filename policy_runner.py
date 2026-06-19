@@ -50,13 +50,21 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    p.add_argument("--pi", required=True, help="ラズパイの IP / ホスト（例 192.168.1.42）")
+    p.add_argument(
+        "--pi", required=True, help="ラズパイの IP / ホスト（例 192.168.1.42）"
+    )
     p.add_argument("--ws-port", type=int, default=9001)
     p.add_argument("--cam-port", type=int, default=8080)
     p.add_argument("--topic", default="/front_camera/image_raw/compressed")
-    p.add_argument("--checkpoint", default=None, help="学習済みモデル。未指定なら DummyPolicy（直進）")
+    p.add_argument(
+        "--checkpoint",
+        default=None,
+        help="学習済みモデル。未指定なら DummyPolicy（直進）",
+    )
     p.add_argument("--hz", type=float, default=CONTROL_HZ)
-    p.add_argument("--dry-run", action="store_true", help="WS 送信せず行動を print だけ")
+    p.add_argument(
+        "--dry-run", action="store_true", help="WS 送信せず行動を print だけ"
+    )
     return p.parse_args(argv)
 
 
@@ -83,7 +91,9 @@ def main(argv: list[str] | None = None) -> int:
 
     prev = (0.0, 0.0)
     period = 1.0 / args.hz
-    print(f"開始: {url} -> ws://{args.pi}:{args.ws_port}  ({'dry-run' if args.dry_run else '実走'}, {args.hz}Hz)")
+    print(
+        f"開始: {url} -> ws://{args.pi}:{args.ws_port}  ({'dry-run' if args.dry_run else '実走'}, {args.hz}Hz)"
+    )
     print("Ctrl+C で停止（終了時に停止指令を送る）。")
     try:
         while not stop["v"]:

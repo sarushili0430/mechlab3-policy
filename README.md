@@ -17,17 +17,33 @@ src/mechlab3_policy/sync.py   # 純: 時刻同期 / 固定Hzリサンプル（py
 tests/                        # 純ロジックのテスト
 convert_to_lerobot.py         # Phase 3: bag+meta → LeRobot 形式（スケルトン）
 policy_runner.py              # Phase 7: 映像 → policy → WS {vx,wz}（DummyPolicy 同梱）
-pyproject.toml                # 依存: lerobot, rosbags, websockets, opencv-python, av
+pyproject.toml                # 実行時依存 + ruff/mypy/pytest/coverage 設定
+requirements-dev.txt          # 開発ツール（ruff/mypy/pytest/lefthook/commitizen）
+lefthook.yml                  # git フック（pre-commit / commit-msg）
+.github/workflows/ci.yml      # CI（ruff + mypy + pytest。torch 非導入の軽量版）
 ```
 
-## セットアップ
+## セットアップ（開発）
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-# torch は CUDA に合わせて別途（例: https://pytorch.org の指示通り）
-pytest          # 純ロジックの確認
+pip install -r requirements-dev.txt    # lint / type / test ツール + lefthook
+lefthook install                        # git フック（pre-commit / commit-msg）を配線
+ruff format --check . && ruff check . && mypy && pytest   # CI と同じ検査
+
+# 変換 / 学習 / 推論を実際に回すときは実行時依存も（重い・GPU は別途）:
+pip install -e .                        # torch / lerobot / rosbags / opencv / av
 ```
+
+## CI
+
+`.github/workflows/ci.yml` が push / PR で走る。**torch / lerobot は入れず**、`requirements-dev.txt`（ruff / mypy / pytest）だけで**純ロジック（`sync.py`）を検査**する軽量構成:
+
+- **lint**: `ruff format --check` + `ruff check`
+- **type**: `mypy --strict`（`src/mechlab3_policy` + `tests`）
+- **test**: `pytest`（カバレッジを Job Summary へ）
+
+変換 / 学習 / 推論コードは重い依存を import するため CI の検査対象外（実装が固まり次第 mypy / test に追加する）。
 
 ## まず WS 経路を疎通確認（モデル不要）
 
